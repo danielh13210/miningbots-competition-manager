@@ -1,0 +1,23 @@
+.navbar {
+  padding-left: 1%;
+}
+
+.navbar-brand-logo {
+  margin-right: 10px;
+  height: 30px;
+}
+
+h1.title {
+  margin-left: 5px;
+}
+
+.instance-box, #no-instance {
+  border-bottom: 2px solid lightgray;
+  margin-left: 5px;
+  margin-right: 5px;
+}
+
+#logout-icon {
+  height: 20px;
+  padding-right: 5px;
+}
