@@ -17,7 +17,11 @@ h1.title {
   margin-right: 5px;
 }
 
-#logout-icon {
+#logout-button {
+  color: black;
+  text-decoration: none;
+}
+
+.icon {
   height: 20px;
-  padding-right: 5px;
 }
