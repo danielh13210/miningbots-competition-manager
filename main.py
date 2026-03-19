@@ -56,5 +56,3 @@ def logout():
 
 @app.route("/favicon.ico")
 def favicon(): return redirect("/static/favicon.ico")
-
-app.run()

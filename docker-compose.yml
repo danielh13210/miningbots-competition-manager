@@ -1,0 +1,9 @@
+services:
+  miningbots-competition-manager:
+    image: miningbots-competition-manager
+    build: .
+    init: true
+    container_name: miningbots-competition-manager
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /data/mcm-submodules:/data/mcm-submodules
