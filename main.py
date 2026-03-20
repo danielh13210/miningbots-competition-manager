@@ -4,7 +4,7 @@ from flask import Flask, render_template, redirect, url_for, request
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
 
 app = Flask(__name__)
-app.secret_key = 'secret'  # Load secret key from env
+app.secret_key = os.environ['SECRET_KEY']  # Load secret key from env
 
 login_manager = LoginManager()
 login_manager.init_app(app)

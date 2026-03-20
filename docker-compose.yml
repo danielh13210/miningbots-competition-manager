@@ -9,3 +9,5 @@ services:
       - /data/mcm-submodules:/data/mcm-submodules
     extra_hosts:
       - "host.docker.internal:host-gateway"
+    environment:
+      - SECRET_KEY=${SECRET_KEY:?}
