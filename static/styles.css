@@ -25,3 +25,7 @@ h1.title {
 .icon {
   height: 20px;
 }
+
+.error {
+  color:red;
+}

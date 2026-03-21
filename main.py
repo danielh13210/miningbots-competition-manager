@@ -3,6 +3,30 @@ import os
 from flask import Flask, render_template, redirect, url_for, request
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
 
+from sqlalchemy import create_engine, text
+from sqlalchemy.orm import declarative_base
+engine=create_engine(os.environ['POSTGRES_CONNECT_URI'])
+
+Base = declarative_base()
+
+class UserEntry(Base):
+    from sqlalchemy import Column, String
+    __tablename__ = "users"
+
+    id = Column(String, primary_key=True)
+    password = Column(String, nullable=False) # not the password, the hex hash
+    uploaddir = Column(String, nullable=False)
+
+Base.metadata.create_all(engine)
+
+def check_user(id,password):
+    with engine.connect() as conn:
+        result = conn.execute(
+            text("SELECT * FROM users WHERE id = :id AND password = encode(sha256((:id||:password)::bytea),'hex')"),
+            {"id": id, "password": password}
+        )
+        return bool(result.fetchone())
+
 app = Flask(__name__)
 app.secret_key = os.environ['SECRET_KEY']  # Load secret key from env
 
@@ -37,10 +61,11 @@ def login():
 def login_post():
     username = request.form.get('userID')
     password = request.form.get('password')
-    # For demonstration, we accept any username/password
-    user = User(username)
-    login_user(user)
-    return redirect(request.args.get('next') or '/')
+    if check_user(username,password):
+        login_user(User(id=username))
+        return redirect(request.args.get('next') or '/')
+    else:
+        return render_template("login.html",error="Login incorrect")
 
 
 @app.route("/")

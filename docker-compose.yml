@@ -11,3 +11,4 @@ services:
       - "host.docker.internal:host-gateway"
     environment:
       - SECRET_KEY=${SECRET_KEY:?}
+      - POSTGRES_CONNECT_URI=${POSTGRES_CONNECT_URI:?}
