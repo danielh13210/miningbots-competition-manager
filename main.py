@@ -5,6 +5,7 @@ from flask_login import LoginManager, UserMixin, login_user, login_required, log
 
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import declarative_base
+import argon2
 engine=create_engine(os.environ['POSTGRES_CONNECT_URI'])
 
 Base = declarative_base()
@@ -22,10 +23,15 @@ Base.metadata.create_all(engine)
 def check_user(id,password):
     with engine.connect() as conn:
         result = conn.execute(
-            text("SELECT * FROM users WHERE id = :id AND password = encode(sha256((:id||:password)::bytea),'hex')"),
-            {"id": id, "password": password}
+            text("SELECT password FROM users WHERE id = :id"),
+            {"id": id}
         )
-        return bool(result.fetchone())
+        password_hash=result.scalar()
+        try:
+            return argon2.PasswordHasher().verify(password_hash,password)
+        except argon2.exceptions.VerifyMismatchError:
+            return False
+
 
 app = Flask(__name__)
 app.secret_key = os.environ['SECRET_KEY']  # Load secret key from env
