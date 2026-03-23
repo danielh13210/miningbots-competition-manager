@@ -7,6 +7,7 @@ services:
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - /data/mcm-submodules:/data/mcm-submodules
+      - /data/mcm-data:/tmp
     extra_hosts:
       - "host.docker.internal:host-gateway"
     environment:
