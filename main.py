@@ -87,3 +87,5 @@ def logout():
 
 @app.route("/favicon.ico")
 def favicon(): return redirect("/static/favicon.ico")
+@app.route("/healthcheck")
+def healthcheck(): return "",204
