@@ -107,7 +107,7 @@ def logout():
 
 from flask import make_response, jsonify
 
-@app.route('/testserver/start')
+@app.route('/testserver/start',methods=['POST'])
 @login_required
 def start():
     player,instance = get_player_data(current_user)
@@ -115,7 +115,7 @@ def start():
         return jsonify({"error":"failed to start container",'rawError': error['rawError']}), 500
     return "", 204
 
-@app.route('/testserver/stop')
+@app.route('/testserver/stop',methods=['POST'])
 @login_required
 def stop():
     player,instance = get_player_data(current_user)
