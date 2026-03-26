@@ -1,5 +1,7 @@
 import os
 
+from instances import *
+
 from flask import Flask, render_template, redirect, url_for, request
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
 
@@ -18,6 +20,19 @@ class UserEntry(Base):
     password = Column(String, nullable=False) # not the password, the hex hash
     uploaddir = Column(String, nullable=False)
 
+class PlayerEntry(Base):
+    from sqlalchemy import Column, String, ForeignKey, PrimaryKeyConstraint
+    __tablename__ = "players"
+
+    name = Column(String, nullable=False)
+    instance = Column(String, nullable=False)
+    uploaddir = Column(String, nullable=False)
+    ownerID = Column(String, ForeignKey("users.id"), nullable=False)
+    testserver = Column(String, nullable=False)
+    __table_args__ = (
+        PrimaryKeyConstraint("instance","name"),
+    )
+
 Base.metadata.create_all(engine)
 
 def check_user(id,password):
@@ -33,6 +48,11 @@ def check_user(id,password):
             return False
 
 
+def get_player_data(user):
+    ownerID=user.id
+    with engine.connect() as conn:
+        player=conn.execute(text("SELECT name, instance FROM players WHERE \"ownerID\"=:ownerID"),{"ownerID":ownerID}).fetchone()
+    return player
 app = Flask(__name__)
 app.secret_key = os.environ['SECRET_KEY']  # Load secret key from env
 
@@ -84,6 +104,24 @@ def protected():
 def logout():
     logout_user()
     return redirect("/login")
+
+from flask import make_response, jsonify
+
+@app.route('/testserver/start')
+@login_required
+def start():
+    player,instance = get_player_data(current_user)
+    if not (error:=start_player(player, instance))['success']:
+        return jsonify({"error":"failed to start container",'rawError': error['rawError']}), 500
+    return "", 204
+
+@app.route('/testserver/stop')
+@login_required
+def stop():
+    player,instance = get_player_data(current_user)
+    if not (error:=stop_player(player, instance))['success']:
+        return jsonify({"error":"failed to stop container",'rawError': error['rawError']}), 500
+    return "", 204
 
 @app.route("/favicon.ico")
 def favicon(): return redirect("/static/favicon.ico")
