@@ -42,6 +42,7 @@ def check_user(id,password):
             {"id": id}
         )
         password_hash=result.scalar()
+        if not password_hash: return False
         try:
             return argon2.PasswordHasher().verify(password_hash,password)
         except argon2.exceptions.VerifyMismatchError:
