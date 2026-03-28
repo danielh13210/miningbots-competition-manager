@@ -106,7 +106,7 @@ def logout():
     logout_user()
     return redirect("/login")
 
-from flask import make_response, jsonify
+from flask import jsonify
 
 @app.route('/testserver/start',methods=['POST'])
 @login_required
