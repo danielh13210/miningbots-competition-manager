@@ -67,6 +67,10 @@ def login_view(route,*args,**kwargs):
         return app.route(route,*args,**kwargs)(view)
     return wrapper
 
+def is_testserver_running(user):
+    player,instance = get_player_data(user)
+    return is_running(player,instance)
+
 # Example user model
 class User(UserMixin):
     def __init__(self, id):
@@ -99,6 +103,11 @@ def login_post():
 @login_required
 def protected():
     return render_template("index.html", username=current_user.id)
+
+@app.route("/testserver")
+@login_required
+def testserver():
+    return render_template("testserver.html", username=current_user.id, isrunning=is_testserver_running(current_user))
 
 @app.route("/logout")
 @login_required

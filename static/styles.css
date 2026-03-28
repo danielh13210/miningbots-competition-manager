@@ -29,3 +29,19 @@ h1.title {
 .error {
   color:red;
 }
+
+#navbarDropdownMenuLink {
+  display:none;
+}
+
+#welcome {
+  display: flex;
+  width: 100vw;
+  height: 24px;
+  align-items: center;
+  justify-content: center;
+}
+
+.navbar-toggler {
+  display: block !important;
+}
