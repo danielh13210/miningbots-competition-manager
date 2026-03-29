@@ -13,6 +13,7 @@ services:
     environment:
       - SECRET_KEY=${SECRET_KEY:?}
       - POSTGRES_CONNECT_URI=${POSTGRES_CONNECT_URI:?}
+      - fe_host=${fe_host:?}
     healthcheck:
       test: ["CMD", "python3", "healthcheck.py"]
       interval: 1m30s

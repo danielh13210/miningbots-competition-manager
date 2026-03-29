@@ -107,7 +107,9 @@ def protected():
 @app.route("/testserver")
 @login_required
 def testserver():
-    return render_template("testserver.html", username=current_user.id, isrunning=is_testserver_running(current_user))
+    player, instance=get_player_data(current_user)
+    container=get_testserver_info(player,instance)
+    return render_template("testserver.html", player=player, frontend_url=os.environ['fe_host'], server_url=f'https://{get_url(container)}', isrunning=is_running(container), observer_key=get_observer_key(container), username=current_user.id)
 
 @app.route("/logout")
 @login_required
