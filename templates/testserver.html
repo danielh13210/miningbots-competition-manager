@@ -70,7 +70,7 @@
     {% else %}
       <button id="stop-server" class="btn btn-secondary" onclick="stop_server_clicked();">Stop Server</button>
     {% endif %}
-    <button class="btn btn-primary" onclick="window.open('{{frontend_url}}/?url={{server_url}}&observer_key={{observer_key}}&instance_name={{player}}\'s Test Server','_blank');">Open Frontend</a>
+    <button class="btn btn-primary" onclick="window.open('{{frontend_url}}/?url={{server_url}}&observer_key={{observer_key}}&instance_name={{player}}\'s Test Server','_blank');" {{'disabled="true" title="Frontend can only be opened while running"' if not isrunning else ''}}>Open Frontend</a>
   </div>
   <script src="/static/mainmenu.js"></script>
 </body>
