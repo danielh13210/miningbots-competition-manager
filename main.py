@@ -2,7 +2,7 @@ import os
 
 from instances import *
 
-from flask import Flask, render_template, redirect, url_for, request
+from flask import Flask, render_template, redirect, url_for, request, abort, send_from_directory
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
 
 from sqlalchemy import create_engine, text
@@ -103,6 +103,19 @@ def login_post():
 @login_required
 def protected():
     return render_template("index.html", username=current_user.id)
+
+@app.route("/competitionserver")
+@login_required
+def competitionserver():
+    return render_template("competitionserver.html", username=current_user.id)
+
+@app.route("/config/<string:filename>")
+def config(filename):
+    player, instance = get_player_data(current_user)
+    uploaddir = os.path.join('/tmp', f'{instance}-{player}')
+    if not os.path.exists(os.path.join(uploaddir, filename)):
+        abort(404)
+    return send_from_directory(uploaddir, filename)
 
 @app.route("/testserver")
 @login_required

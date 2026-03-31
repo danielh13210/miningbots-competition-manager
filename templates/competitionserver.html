@@ -11,7 +11,6 @@
     integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
     crossorigin="anonymous"></script>
   <link href="/static/styles.css" rel="stylesheet" />
-  <script src="/static/start_stop.js"></script>
 </head>
 
 <body>
@@ -61,34 +60,16 @@
       </ul>
     </div>
   </nav>
-  <h1>
-    Test Server
-  </h1>
-  <p>
-    You (or your team) have been provisioned a test server. The controls are below.
-  </p>
-  <div id="testserver-controls">
-    {% if not isrunning %}
-      <button id="start-server" class="btn btn-primary" onclick="start_server_clicked();">Start Server</button>
-    {% else %}
-      <button id="stop-server" class="btn btn-secondary" onclick="stop_server_clicked();">Stop Server</button>
-    {% endif %}
-    <span
-    {% if not isrunning %}
-      title="Start the server to open the frontend"
-    {% endif %}
-    >
-      <button
-        class="btn btn-primary"
-        onclick="window.open('{{frontend_url}}/?url={{server_url}}&observer_key={{observer_key}}&instance_name={{player}}\'s Test Server','_blank');"
-        {% if not isrunning %}
-          disabled
-        {% endif %}
-      >Open Frontend</button>
-    </span>
-  </div>
-  To use the test server, you will need the configuration pack.
-  <a href="/config/testpack.zip">Download configuration pack</a>
-  <p>Looking for the configuration for the competition server? You can find it <a href="/competitionserver">here</a></p>
+  <h2>Ready to submit?</h2>
+  <h3>Step 1:</h3>
+  <p>First replace the configuration files.</p>
+  <ol>
+    <li>Delete the old configuration files in the config folder.</li>
+    <li>Download the new configuration files <a href="/config/comppack.zip">here</a></li>
+    <li>Unzip the zip file <strong>directly into the config folder</strong>.</li>
+  </ol>
+  <h3>Step 2:</h3>
+  <p>Submit your player as a zip file below.</p>
+  <!-- TODO: write the actual submission -->
   <script src="/static/mainmenu.js"></script>
 </body>
