@@ -2,26 +2,26 @@ import httpx
 import re
 traefik_rule_matcher=re.compile(r'traefik\..*\.rule')
 get_host=re.compile(r'Host\("(.*)"\)')
-def start_player(player,instance):
+def start_player(ownerID, player, instance):
     with httpx.Client(transport=httpx.HTTPTransport(uds="/var/run/docker.sock")) as client:
-        response = client.post(f"http://localhost/containers/{instance}-{player}/start",timeout=httpx.Timeout(30.0))
+        response = client.post(f"http://localhost/containers/{ownerID}-{instance}-{player}/start",timeout=httpx.Timeout(30.0))
 
         try:
             content=response.json()
         except:
             content=None
         return {'success':response.status_code==204 or response.status_code==304,'rawError':content} # return true if success
-def stop_player(player,instance):
+def stop_player(ownerID, player, instance):
     with httpx.Client(transport=httpx.HTTPTransport(uds="/var/run/docker.sock")) as client:
-        response = client.post(f"http://localhost/containers/{instance}-{player}/stop",timeout=httpx.Timeout(30.0))
+        response = client.post(f"http://localhost/containers/{ownerID}-{instance}-{player}/stop",timeout=httpx.Timeout(30.0))
         try:
             content=response.json()
         except:
             content=None
         return {'success':response.status_code==204 or response.status_code==304,'rawError':content} # return true if success
-def get_testserver_info(player,instance):
+def get_testserver_info(ownerID, player, instance):
     with httpx.Client(transport=httpx.HTTPTransport(uds="/var/run/docker.sock")) as client:
-        response = client.get(f"http://localhost/containers/{instance}-{player}/json",timeout=httpx.Timeout(30.0))
+        response = client.get(f"http://localhost/containers/{ownerID}-{instance}-{player}/json",timeout=httpx.Timeout(30.0))
         try:
             content=response.json()
         except:

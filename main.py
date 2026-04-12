@@ -52,7 +52,7 @@ def check_user(id,password):
 def get_player_data(user):
     ownerID=user.id
     with engine.connect() as conn:
-        player=conn.execute(text("SELECT name, instance FROM players WHERE \"ownerID\"=:ownerID"),{"ownerID":ownerID}).fetchone()
+        player=conn.execute(text("SELECT username, name, instance FROM players WHERE \"ownerID\"=:ownerID"),{"ownerID":ownerID}).fetchone()
     return player
 app = Flask(__name__)
 app.secret_key = os.environ['SECRET_KEY']  # Load secret key from env
@@ -68,8 +68,8 @@ def login_view(route,*args,**kwargs):
     return wrapper
 
 def is_testserver_running(user):
-    player,instance = get_player_data(user)
-    return is_running(player,instance)
+    ownerID,player,instance = get_player_data(user)
+    return is_running(ownerID,player,instance)
 
 # Example user model
 class User(UserMixin):
@@ -111,8 +111,8 @@ def competitionserver():
 
 @app.route("/config/<string:filename>")
 def config(filename):
-    player, instance = get_player_data(current_user)
-    uploaddir = os.path.join('/tmp', f'{instance}-{player}')
+    instanceOwner, player, instance = get_player_data(current_user)
+    uploaddir = os.path.join('/tmp', f'{instanceOwner}-{instance}-{player}')
     if not os.path.exists(os.path.join(uploaddir, filename)):
         abort(404)
     return send_from_directory(uploaddir, filename)
@@ -120,8 +120,8 @@ def config(filename):
 @app.route("/testserver")
 @login_required
 def testserver():
-    player, instance=get_player_data(current_user)
-    container=get_testserver_info(player,instance)
+    ownerID, player, instance = get_player_data(current_user)
+    container=get_testserver_info(ownerID, player, instance)
     return render_template("testserver.html", player=player, frontend_url=os.environ['fe_host'], server_url=f'https://{get_url(container)}', isrunning=is_running(container), observer_key=get_observer_key(container), username=current_user.id)
 
 @app.route("/logout")
@@ -135,16 +135,16 @@ from flask import jsonify
 @app.route('/testserver/start',methods=['POST'])
 @login_required
 def start():
-    player,instance = get_player_data(current_user)
-    if not (error:=start_player(player, instance))['success']:
+    ownerID, player, instance = get_player_data(current_user)
+    if not (error:=start_player(ownerID, player, instance))['success']:
         return jsonify({"error":"failed to start container",'rawError': error['rawError']}), 500
     return "", 204
 
 @app.route('/testserver/stop',methods=['POST'])
 @login_required
 def stop():
-    player,instance = get_player_data(current_user)
-    if not (error:=stop_player(player, instance))['success']:
+    ownerID, player, instance = get_player_data(current_user)
+    if not (error:=stop_player(ownerID, player, instance))['success']:
         return jsonify({"error":"failed to stop container",'rawError': error['rawError']}), 500
     return "", 204
 
