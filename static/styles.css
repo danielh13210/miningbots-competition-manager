@@ -45,3 +45,12 @@ h1.title {
 .navbar-toggler {
   display: block !important;
 }
+
+span.btn-wrapper.disabled, button.btn[disabled] {
+  cursor: not-allowed !important;
+  opacity: 1;
+}
+
+span.btn-wrapper {
+  display: inline-flex;
+}
