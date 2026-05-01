@@ -68,14 +68,19 @@
     You (or your team) have been provisioned a test server. The controls are below.
   </p>
   <div id="testserver-controls">
-    {% if not isrunning %}
-      <button id="start-server" class="btn btn-primary" onclick="start_server_clicked();">Start Server</button>
-    {% else %}
-      <button id="stop-server" class="btn btn-secondary" onclick="stop_server_clicked();">Stop Server</button>
-    {% endif %}
+    <span class="btn-wrapper">
+      {% if not isrunning %}
+        <button id="start-server" class="btn btn-primary" onclick="start_server_clicked();">Start Server</button>
+      {% else %}
+        <button id="stop-server" class="btn btn-secondary" onclick="stop_server_clicked();">Stop Server</button>
+      {% endif %}
+    </span>
     <span
     {% if not isrunning %}
       title="Start the server to open the frontend"
+      class="btn-wrapper disabled"
+    {% else %}
+      class="btn-wrapper"
     {% endif %}
     >
       <button
