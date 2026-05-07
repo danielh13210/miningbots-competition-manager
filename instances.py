@@ -1,5 +1,23 @@
 import httpx
 import re
+
+def safe_extract(zip_file, target_dir):
+    for info in zip_file.infolist():
+        # Check for symlinks
+        if stat.S_ISLNK(info.external_attr >> 16):
+            continue
+
+        # Build safe path
+        extracted_path = os.path.join(target_dir, info.filename)
+        abs_target = os.path.abspath(target_dir)
+        abs_extracted = os.path.abspath(extracted_path)
+
+        # Prevent path traversal
+        if not abs_extracted.startswith(abs_target):
+            continue
+
+        zip_file.extract(info, target_dir)
+
 traefik_rule_matcher=re.compile(r'traefik\..*\.rule')
 get_host=re.compile(r'Host\("(.*)"\)')
 def start_player(ownerID, player, instance):

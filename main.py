@@ -2,6 +2,8 @@ import os
 
 from instances import *
 
+import datetime
+
 from flask import Flask, render_template, redirect, url_for, request, abort, send_from_directory
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
 
@@ -147,6 +149,21 @@ def stop():
     if not (error:=stop_player(ownerID, player, instance))['success']:
         return jsonify({"error":"failed to stop container",'rawError': error['rawError']}), 500
     return "", 204
+
+@app.route('/submit',methods=['POST'])
+@login_required
+def submit():
+    with engine.connect() as conn:
+        user_data=get_player_data(current_user)
+        uploaddir = conn.execute(text("SELECT uploaddir FROM players WHERE \"ownerID\"=:ownerID AND \"instance\"=:instance AND \"name\"=:player"),{"ownerID":user_data[0], "instance":user_data[2], "player":user_data[1]}).fetchone()[0]
+    targetfile=datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S")+".zip"
+    request.files.get("submission").save(os.path.join(uploaddir,targetfile))
+    import shutil
+    unzipped_dir = os.path.join(uploaddir, 'current-player')
+    shutil.rmtree(unzipped_dir, ignore_errors=True)
+    os.makedirs(unzipped_dir)
+    safe_extract(os.path.join(uploaddir,targetfile), unzipped_dir)
+    return render_template("submitsuccess.html", username=current_user.id)
 
 @app.route("/favicon.ico")
 def favicon(): return redirect("/static/favicon.ico")
