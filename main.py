@@ -2,12 +2,20 @@ import os
 
 from instances import *
 
+import datetime
+
 from flask import Flask, render_template, redirect, url_for, request, abort, send_from_directory
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
 
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import declarative_base
 import argon2
+
+import re
+submission_matcher = re.compile(r"^\d{4}-\d{2}-\d{2}-\d{2}-\d{2}-\d{2}\.zip$")
+
+import zipfile
+
 engine=create_engine(os.environ['POSTGRES_CONNECT_URI'])
 
 Base = declarative_base()
@@ -110,6 +118,7 @@ def competitionserver():
     return render_template("competitionserver.html", username=current_user.id)
 
 @app.route("/config/<string:filename>")
+@app.route("/submission/<string:filename>")
 def config(filename):
     instanceOwner, player, instance = get_player_data(current_user)
     uploaddir = os.path.join('/tmp', f'{instanceOwner}-{instance}-{player}')
@@ -147,6 +156,54 @@ def stop():
     if not (error:=stop_player(ownerID, player, instance))['success']:
         return jsonify({"error":"failed to stop container",'rawError': error['rawError']}), 500
     return "", 204
+
+@app.route('/submit',methods=['POST'])
+@login_required
+def submit():
+    # Check if submission file exists
+    if 'submission' not in request.files or request.files['submission'].filename == '':
+        return jsonify({"error": "No submission file provided"}), 400
+    
+    # Get upload directory from database
+    with engine.connect() as conn:
+        result = conn.execute(text("SELECT uploaddir FROM players WHERE \"ownerID\"=:ownerID"),{"ownerID":current_user.id}).fetchone()
+        if not result:
+            return jsonify({"error": "Player data not found"}), 400
+        uploaddir = result[0]
+    
+    if not uploaddir or not os.path.exists(uploaddir):
+        return jsonify({"error": "Upload directory not accessible"}), 500
+    
+    try:
+        targetfile = datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S")+".zip"
+        request.files['submission'].save(os.path.join(uploaddir, targetfile))
+        
+        import shutil
+        unzipped_dir = os.path.join(uploaddir, 'current-player')
+        shutil.rmtree(unzipped_dir, ignore_errors=True)
+        os.makedirs(unzipped_dir)
+        
+        safe_extract(zipfile.ZipFile(os.path.join(uploaddir, targetfile)), unzipped_dir)
+        return render_template("submitsuccess.html", username=current_user.id)
+    except Exception as e:
+        return jsonify({"error": "Failed to process submission", "details": str(e)}), 500
+
+@app.route("/history")
+@login_required
+def history():
+    # Get upload directory from database
+    with engine.connect() as conn:
+        result = conn.execute(text("SELECT uploaddir FROM players WHERE \"ownerID\"=:ownerID"),{"ownerID":current_user.id}).fetchone()
+        if not result:
+            return jsonify({"error": "Player data not found"}), 400
+        uploaddir = result[0]
+    
+    if not uploaddir or not os.path.exists(uploaddir):
+        return jsonify({"error": "Upload directory not accessible"}), 500
+    
+    submissions = list(filter(submission_matcher.match, os.listdir(uploaddir)))
+    submissions.sort(key=lambda x: datetime.datetime.strptime(x[:-4], "%Y-%m-%d-%H-%M-%S"),reverse=True)
+    return render_template("history.html", username=current_user.id, submissions=submissions)
 
 @app.route("/favicon.ico")
 def favicon(): return redirect("/static/favicon.ico")

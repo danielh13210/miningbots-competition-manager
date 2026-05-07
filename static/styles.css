@@ -54,3 +54,8 @@ span.btn-wrapper.disabled, button.btn[disabled] {
 span.btn-wrapper {
   display: inline-flex;
 }
+
+.submissions-list {
+  display: flex;
+  flex-direction: column;
+}

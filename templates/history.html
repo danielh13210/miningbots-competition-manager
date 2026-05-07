@@ -60,20 +60,20 @@
       </ul>
     </div>
   </nav>
-  <h2>Ready to submit?</h2>
-  <h3>Step 1:</h3>
-  <p>First replace the configuration files.</p>
-  <ol>
-    <li>Delete the old configuration files in the config folder.</li>
-    <li>Download the new configuration files <a href="/config/comppack.zip">here</a>.</li>
-    <li>Unzip the zip file <strong>directly into the config folder</strong>.</li>
-  </ol>
-  <h3>Step 2:</h3>
-  <p>Submit your player as a zip file below.</p>
-  <form action="/submit" method="post" enctype="multipart/form-data">
-    <input type="file" name="submission" accept=".zip" required>
-    <button type="submit" class="btn btn-primary">Submit Player</button>
-  </form>
-  <a href="/history">Submission History</a>
+  <h1>Previous Submissions</h1>
+  <p>
+    Here you can find your (or your team's) previous submissions. Click any of them to download a ZIP file of that submission.<br>
+    Dates are in YYYY-MM-DD-HH-MM-SS format, and the timestamp is based on when the submission was received by the server. Time zone is UTC.
+  </p>
+  {% set suffix = '.zip' %}
+  <div class="submissions-list">
+    {% for submission in submissions %}
+      <a href="/submission/{{submission}}" class="submission-link">
+        {{ submission[:-(suffix|length)] if submission.endswith(suffix) else submission }}
+      </a>
+    {% endfor %}
+  </div>
   <script src="/static/mainmenu.js"></script>
 </body>
+
+
