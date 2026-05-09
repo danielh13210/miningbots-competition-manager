@@ -67,11 +67,14 @@
   </p>
   {% set suffix = '.zip' %}
   <div class="submissions-list">
-    {% for submission in submissions %}
-      <a href="/submission/{{submission}}" class="submission-link">
-        {{ submission[:-(suffix|length)] if submission.endswith(suffix) else submission }}
-      </a>
-    {% endfor %}
+    {% if submissions %}
+      {% for submission in submissions %}
+        <a href="/submission/{{submission}}" class="submission-link">
+          {{ submission[:-(suffix|length)] if submission.endswith(suffix) else submission }}
+        </a>
+      {% endfor %}
+    {% else %}
+      <p>No submissions.</p>
   </div>
   <script src="/static/mainmenu.js"></script>
 </body>
