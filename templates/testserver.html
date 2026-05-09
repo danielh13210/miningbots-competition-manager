@@ -75,6 +75,7 @@
         <button id="stop-server" class="btn btn-secondary" onclick="stop_server_clicked();">Stop Server</button>
       {% endif %}
     </span>
+    {% set ownerID = username %}
     <span
     {% if not isrunning %}
       title="Start the server to open the frontend"
@@ -85,7 +86,7 @@
     >
       <button
         class="btn btn-primary"
-        onclick="window.open('{{frontend_url}}/?url={{server_url}}&observer_key={{observer_key}}&instance_name={{player}}\'s Test Server','_blank');"
+        onclick="window.open('{{frontend_url}}/?url={{server_url}}&observer_key={{observer_key}}&instance_name={{ownerID}}\'s Test Server','_blank');"
         {% if not isrunning %}
           disabled
         {% endif %}
