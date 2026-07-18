@@ -24,7 +24,7 @@ function start_server_clicked(){
             button.innerText="Failed";
             setTimeout(()=>{
                 button.disabled=false;
-                button.innerText="Start";
+                button.innerText="Start Server";
             },2000);
         }
     });
@@ -42,7 +42,7 @@ function stop_server_clicked(){
             button.innerText="Failed";
             setTimeout(()=>{
                 button.disabled=false;
-                button.innerText="Stop";
+                button.innerText="Stop Server";
             },2000);
         }
     });
