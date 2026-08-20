@@ -14,6 +14,7 @@ services:
       - SECRET_KEY=${SECRET_KEY:?}
       - POSTGRES_CONNECT_URI=${POSTGRES_CONNECT_URI:?}
       - REDIS_CONNECT_URI=${REDIS_CONNECT_URI:?}
+      - BASE_DOMAIN=${BASE_DOMAIN:?}
       - fe_host=${fe_host:?}
     healthcheck:
       test: ["CMD", "python3", "healthcheck.py"]

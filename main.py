@@ -32,13 +32,14 @@ class UserEntry(Base):
     uploaddir = Column(String, nullable=False)
 
 class PlayerEntry(Base):
-    from sqlalchemy import Column, String, ForeignKey, PrimaryKeyConstraint
+    from sqlalchemy import Column, String, BigInteger, ForeignKey, PrimaryKeyConstraint
     __tablename__ = "players"
 
     name = Column(String, nullable=False)
     instance = Column(String, nullable=False)
     uploaddir = Column(String, nullable=False)
     ownerID = Column(String, ForeignKey("users.id"), nullable=False)
+    instance_observer_key = Column(BigInteger, nullable=False)
     testserver = Column(String, nullable=False)
     __table_args__ = (
         PrimaryKeyConstraint("instance","name"),
@@ -105,10 +106,13 @@ def check_user(id,password):
             return False
 
 
-def get_player_data(user):
+def get_player_data(user,include_global_data=False):
     ownerID=user.id
     with engine.connect() as conn:
-        player=conn.execute(text("SELECT username, name, instance FROM players WHERE \"ownerID\"=:ownerID"),{"ownerID":ownerID}).fetchone()
+        if include_global_data:
+            player=conn.execute(text("SELECT username, name, instance, instance_observer_key, instance_config_dir FROM players WHERE \"ownerID\"=:ownerID"),{"ownerID":ownerID}).fetchone()
+        else:
+            player=conn.execute(text("SELECT username, name, instance FROM players WHERE \"ownerID\"=:ownerID"),{"ownerID":ownerID}).fetchone()
     return player
 app = Flask(__name__)
 app.secret_key = os.environ['SECRET_KEY']  # Load secret key from env
@@ -199,8 +203,11 @@ def config(filename):
 @login_required
 def testserver():
     ownerID, player, instance = get_player_data(current_user)
-    container=get_testserver_info(ownerID, player, instance)
-    return render_template("testserver.html", player=player, frontend_url=os.environ['fe_host'], server_url=f'https://{get_url(container)}', isrunning=is_running(container), observer_key=get_observer_key(container), username=current_user.id)
+    if container:=get_testserver_info(ownerID, player, instance):
+        return render_template("testserver.html", player=player, frontend_url=os.environ['fe_host'], server_url=f'https://{get_url(container)}', isrunning=is_running(container), observer_key=get_observer_key(container), username=current_user.id)
+    else:
+        return render_template("testserver.html", player=player, frontend_url=os.environ['fe_host'], server_url=None, isrunning=False, observer_key=None, username=current_user.id)
+
 
 @app.route("/logout")
 @login_required
@@ -215,8 +222,8 @@ from flask import jsonify
 @app.route('/testserver/start',methods=['POST'])
 @login_required
 def start():
-    ownerID, player, instance = get_player_data(current_user)
-    if not (error:=start_player(ownerID, player, instance))['success']:
+    ownerID, player, instance, instance_observer_key, instance_config_dir = get_player_data(current_user,True)
+    if not (error:=spawn_player(ownerID, player, instance,instance_observer_key,instance_config_dir))['success']:
         return jsonify({"error":"failed to start container",'rawError': error['rawError']}), 500
     return "", 204
 
@@ -234,26 +241,26 @@ def submit():
     # Check if submission file exists
     if 'submission' not in request.files or request.files['submission'].filename == '':
         return jsonify({"error": "No submission file provided"}), 400
-    
+
     # Get upload directory from database
     with engine.connect() as conn:
         result = conn.execute(text("SELECT uploaddir FROM players WHERE \"ownerID\"=:ownerID"),{"ownerID":current_user.id}).fetchone()
         if not result:
             return jsonify({"error": "Player data not found"}), 400
         uploaddir = result[0]
-    
+
     if not uploaddir or not os.path.exists(uploaddir):
         return jsonify({"error": "Upload directory not accessible"}), 500
-    
+
     try:
         targetfile = datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S")+".zip"
         request.files['submission'].save(os.path.join(uploaddir, targetfile))
-        
+
         import shutil
         unzipped_dir = os.path.join(uploaddir, 'current-player')
         shutil.rmtree(unzipped_dir, ignore_errors=True)
         os.makedirs(unzipped_dir)
-        
+
         safe_extract(zipfile.ZipFile(os.path.join(uploaddir, targetfile)), unzipped_dir)
         return render_template("submitsuccess.html", username=current_user.id)
     except Exception as e:
@@ -268,10 +275,10 @@ def history():
         if not result:
             return jsonify({"error": "Player data not found"}), 400
         uploaddir = result[0]
-    
+
     if not uploaddir or not os.path.exists(uploaddir):
         return jsonify({"error": "Upload directory not accessible"}), 500
-    
+
     submissions = list(filter(submission_matcher.match, os.listdir(uploaddir)))
     submissions.sort(key=lambda x: datetime.datetime.strptime(x[:-4], "%Y-%m-%d-%H-%M-%S"),reverse=True)
     return render_template("history.html", username=current_user.id, submissions=submissions)
