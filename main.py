@@ -4,8 +4,11 @@ from instances import *
 
 import datetime
 
-from flask import Flask, render_template, redirect, url_for, request, abort, send_from_directory
+from flask import Flask, render_template, redirect, url_for, request, abort, send_from_directory, session
+from flask.sessions import SecureCookieSessionInterface
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
+
+from datetime import timedelta
 
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import declarative_base
@@ -43,6 +46,51 @@ class PlayerEntry(Base):
 
 Base.metadata.create_all(engine)
 
+import redis
+_redis_pool = None
+
+def get_redis_client():
+    """
+    Lazy initialization. This guarantees the Connection Pool is spawned
+    separately inside the memory space of whichever Gunicorn worker calls it.
+    """
+    global _redis_pool
+    if _redis_pool is None:
+        # max_connections limits the capacity PER WORKER
+        _redis_pool = redis.ConnectionPool.from_url(
+            os.environ.get("REDIS_CONNECT_URI"),
+            decode_responses=True,
+            max_connections=10
+        )
+    return redis.Redis(connection_pool=_redis_pool)
+
+def get_cookie_expiry_timestamp(raw_cookie_string: str) -> int:
+    """
+    Parses a raw classic Flask session cookie, extracts its creation time,
+    and returns the absolute Unix epoch timestamp of its exact expiration.
+    """
+    session_interface = SecureCookieSessionInterface()
+    serializer = session_interface.get_signing_serializer(app)
+
+    # Get your configured session duration in total seconds (e.g., 604800)
+    max_age_seconds = int(app.permanent_session_lifetime.total_seconds())
+
+    # loads_with_timestamp decrypts and extracts the birth datetime of the cookie
+    _, created_at_datetime = serializer.loads(
+        raw_cookie_string,
+        max_age=max_age_seconds,
+        return_timestamp=True  # ◄── This forces the return of the creation stamp
+    )
+
+    # Convert the creation datetime to a standard Unix Epoch Integer
+    created_at_epoch = int(created_at_datetime.timestamp())
+
+    # Absolute Expiry = Born Timestamp + Allowed Lifespan
+    absolute_expiry_epoch = created_at_epoch + max_age_seconds
+    return absolute_expiry_epoch
+
+
+
 def check_user(id,password):
     with engine.connect() as conn:
         result = conn.execute(
@@ -64,6 +112,7 @@ def get_player_data(user):
     return player
 app = Flask(__name__)
 app.secret_key = os.environ['SECRET_KEY']  # Load secret key from env
+app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=5)
 
 login_manager = LoginManager()
 login_manager.init_app(app)
@@ -81,13 +130,32 @@ def is_testserver_running(user):
 
 # Example user model
 class User(UserMixin):
-    def __init__(self, id):
+    def __init__(self, id, session_id):
         self.id = id
+        self.session_id=int(session_id)
+
+    def get_id(self):
+        return self.id+'-'+str(self.session_id)
+
+@app.before_request
+def force_permanent_session_lifecycle():
+    """
+    By setting this here, Flask is forced to treat the current browser cookie
+    as long-lived, injecting the Max-Age and Expires headers automatically
+    on the outgoing HTTP response.
+    """
+    session.permanent = True
 
 # User loader callback
 @login_manager.user_loader
 def load_user(user_id):
-    return User(user_id)
+    components=user_id.split('-')
+    user_id='-'.join(components[:-1])
+    session_id=int(components[-1])
+    if get_redis_client().get(f'banned-competition-manager-session-{session_id}')=='':
+        return None
+    # this session is permitted
+    return User(user_id,session_id)
 
 @app.route("/login",methods=['GET'])
 @login_view('/login')
@@ -101,7 +169,8 @@ def login_post():
     username = request.form.get('userID')
     password = request.form.get('password')
     if check_user(username,password):
-        login_user(User(id=username))
+        import secrets
+        login_user(User(id=username,session_id=secrets.randbits(128)))
         return redirect(request.args.get('next') or '/')
     else:
         return render_template("login.html",error="Login incorrect")
@@ -136,6 +205,8 @@ def testserver():
 @app.route("/logout")
 @login_required
 def logout():
+    cookie=request.cookies.get('session')
+    get_redis_client().set(f'banned-competition-manager-session-{current_user.session_id}','',exat=get_cookie_expiry_timestamp(cookie))
     logout_user()
     return redirect("/login")
 
