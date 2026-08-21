@@ -156,8 +156,19 @@ def load_user(user_id):
     components=user_id.split('-')
     user_id='-'.join(components[:-1])
     session_id=int(components[-1])
-    if get_redis_client().get(f'banned-competition-manager-session-{session_id}')=='':
+    redis_client=get_redis_client()
+    if redis_client.get(f'banned-competition-manager-session-{session_id}')=='':
         return None
+    user_exists=redis_client.get(f'userstate.competition-manager.{user_id}')
+    if user_exists is None:
+        #check postgres
+        with engine.connect() as conn:
+            user_exists=bool(conn.execute(text("SELECT id FROM users WHERE id=:userid"),{"userid":user_id}).scalar())
+            cookie=request.cookies.get('session')
+            redis_client.set(f'userstate.competition-manager.{user_id}',str(user_exists),exat=get_cookie_expiry_timestamp(cookie))
+    user_exists=user_exists=="True"
+    if not user_exists:
+      return None
     # this session is permitted
     return User(user_id,session_id)
 
